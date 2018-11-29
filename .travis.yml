@@ -1,0 +1,7 @@
+dist: trusty
+group: travis_latest
+language: minimal
+script:
+  - curl -fsSL https://raw.githubusercontent.com/nemchik/ShellSuite/${TRAVIS_COMMIT}/shellsuite.sh -o shellsuite.sh && bash shellsuite.sh -p "${PWD}" -v "bashate" -f " -i E006"
+  - curl -fsSL https://raw.githubusercontent.com/nemchik/ShellSuite/${TRAVIS_COMMIT}/shellsuite.sh -o shellsuite.sh && bash shellsuite.sh -p "${PWD}" -v "shellcheck" -f " -x"
+  - curl -fsSL https://raw.githubusercontent.com/nemchik/ShellSuite/${TRAVIS_COMMIT}/shellsuite.sh -o shellsuite.sh && bash shellsuite.sh -p "${PWD}" -v "shfmt" -f " -s -i 4 -ci -sr -d"
