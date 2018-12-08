@@ -110,8 +110,7 @@ cmdline() {
                         readonly VALIDATORCHECK="--version"
                         ;;
                     shfmt)
-                        #readonly VALIDATOR="docker run --rm -v ${VALIDATIONPATH}:${VALIDATIONPATH} jamesmstone/shfmt"
-                        readonly VALIDATOR="docker run --rm -v ${VALIDATIONPATH}:${VALIDATIONPATH} mvdan/shfmt:v2.6.1 shfmt"
+                        readonly VALIDATOR="docker run --rm -v ${VALIDATIONPATH}:${VALIDATIONPATH} mvdan/shfmt"
                         readonly VALIDATORCHECK="--version"
                         ;;
                     *)
