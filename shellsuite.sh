@@ -141,7 +141,7 @@ cmdline() {
                 ;;
             *)
                 usage
-                exit
+                exit 1
                 ;;
         esac
     done
