@@ -1,7 +1,26 @@
-dist: trusty
-group: travis_latest
 language: minimal
+env:
+  global:
+    - FLAGS_BASHATE="-i E006"
+    - FLAGS_SHELLCHECK="-x"
+    - FLAGS_SHFMT="-s -i 4 -ci -sr -d"
+    - TAG_BASHATE=latest
+    - TAG_SHELLCHECK=v0.6.0
+    - TAG_SHFMT=v2.6.2
+  matrix:
+    - BRANCH=${TRAVIS_COMMIT} VALIDATOR=bashate     FLAGS=${FLAGS_BASHATE}    TAG=${TAG_BASHATE}
+    - BRANCH=${TRAVIS_COMMIT} VALIDATOR=bashate     FLAGS=${FLAGS_BASHATE}    TAG=latest
+    - BRANCH=${TRAVIS_COMMIT} VALIDATOR=shellcheck  FLAGS=${FLAGS_SHELLCHECK} TAG=${TAG_SHELLCHECK}
+    - BRANCH=${TRAVIS_COMMIT} VALIDATOR=shellcheck  FLAGS=${FLAGS_SHELLCHECK} TAG=latest
+    - BRANCH=${TRAVIS_COMMIT} VALIDATOR=shfmt       FLAGS=${FLAGS_SHFMT}      TAG=${TAG_SHFMT}
+    - BRANCH=${TRAVIS_COMMIT} VALIDATOR=shfmt       FLAGS=${FLAGS_SHFMT}      TAG=latest
+    - BRANCH=master           VALIDATOR=bashate     FLAGS=${FLAGS_BASHATE}    TAG=${TAG_BASHATE}
+    - BRANCH=master           VALIDATOR=bashate     FLAGS=${FLAGS_BASHATE}    TAG=latest
+    - BRANCH=master           VALIDATOR=shellcheck  FLAGS=${FLAGS_SHELLCHECK} TAG=${TAG_SHELLCHECK}
+    - BRANCH=master           VALIDATOR=shellcheck  FLAGS=${FLAGS_SHELLCHECK} TAG=latest
+    - BRANCH=master           VALIDATOR=shfmt       FLAGS=${FLAGS_SHFMT}      TAG=${TAG_SHFMT}
+    - BRANCH=master           VALIDATOR=shfmt       FLAGS=${FLAGS_SHFMT}      TAG=latest
 script:
-  - curl -fsSL https://raw.githubusercontent.com/nemchik/ShellSuite/${TRAVIS_COMMIT}/shellsuite.sh -o shellsuite.sh && bash shellsuite.sh -p "${PWD}" -v "bashate" -f " -i E006"
-  - curl -fsSL https://raw.githubusercontent.com/nemchik/ShellSuite/${TRAVIS_COMMIT}/shellsuite.sh -o shellsuite.sh && bash shellsuite.sh -p "${PWD}" -v "shellcheck" -f " -x"
-  - curl -fsSL https://raw.githubusercontent.com/nemchik/ShellSuite/${TRAVIS_COMMIT}/shellsuite.sh -o shellsuite.sh && bash shellsuite.sh -p "${PWD}" -v "shfmt" -f " -s -i 4 -ci -sr -d"
+  - curl -fsSL https://raw.githubusercontent.com/nemchik/ShellSuite/${BRANCH}/shellsuite.sh -o shellsuite.sh && bash shellsuite.sh -p "${PWD}" -v "${VALIDATOR}" -f " ${FLAGS}" -t "${TAG}"
+matrix:
+  fast_finish: true
