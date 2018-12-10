@@ -2,25 +2,57 @@
 
 [![Travis (.com) branch](https://img.shields.io/travis/com/nemchik/ShellSuite/master.svg?logo=travis)](https://travis-ci.com/nemchik/ShellSuite) [![GitHub](https://img.shields.io/github/license/nemchik/ShellSuite.svg)](https://github.com/nemchik/ShellSuite/blob/master/LICENSE.md)
 
-This is a collection of shell script validations designed to run on git repositories. The intention of this project is to be run by CI/CD such as [Travis CI](https://travis-ci.com/) and others, but you can also run it locally/manually.
+This is a collection of shell script validation tools designed to run on git repositories. The intention of this project is to be run by CI/CD such as [Travis CI](https://travis-ci.com/) and others, but you can also run it locally/manually.
 
 ## Purpose
 
-These tools are already available for direct use in many CI/CD environments and otherwise, but after using them I've found some inconsistencies. This project aims to solve those inconsistencies by:
+These tools are available for direct use in many CI/CD environments and locally, but ShellSuite aims to solve a few common problems.
 
-- Using the same tool/version on each environment used for testing.
-- Using the latest available version of each tool via Docker.
-- Only scanning files that are part of the git repo using `git ls-tree` and skipping files ignored with `.gitignore`.
+> Issue: Not all environments have all of the tools.
+>
+> Our Resolution: ShellSuite uses Docker to run the tools so they can be used in any environment with Docker installed.
+
+<!-- -->
+
+> Issue: Multiple devs on a project may not keep their local validation tools up to date.
+>
+> Our Resolution: Running ShellSuite on a repository will keep the version of the tools used consistent.
+
+<!-- -->
+
+> Issue: CI/CD environment does not have an up to date version of a tool.
+>
+> Our Resolution: ShellSuite offers the latest officially released version of all validation tools whenever possible. When an official release is not available the best available 3rd party option is used. Devs of validation tools will be contacted to request official releases as necessary.
+
+<!-- -->
+
+> Issue: The validation tools update too often! New rules are added that break things!
+>
+> Our Resolution: You may specify a version to be used with each tool as long as they have a tag for that version on their Docker image. Devs of validation tools will be contacted to request version tags as necessary.
+
+<!-- -->
+
+> Issue: After cloning a git repository that needs to be validated, other shell scripts are sometimes added to the repository folder and ignored by `.gitignore` and do not need to be validated.
+>
+> Our Resolution: ShellSuite only scans shell files that are a part of the git repo using `git ls-tree`.
+
+<!-- -->
 
 ## Script Arguments
 
 The following arguments are required:
 
-`-p` or `--path` must be defined first and should be the full path to the git repo being tested.
+`-p` or `--path` must be defined first and should be the full path to the git repo being tested. `${PWD}` can be used when the current directory is the root of the git repo.
 
-`-v` or `--validator` accepts `bashate`, `shellcheck`, or `shfmt`.
+`-v` or `--validator` accepts [bashate](https://github.com/openstack-dev/bashate), [shellcheck](https://github.com/koalaman/shellcheck), or [shfmt](https://github.com/mvdan/sh).
 
 `-f` or `--flags` must start with a blank space and will be passed to the validator for testing. This allows you to ignore certain validation rules if needed.
+
+---
+
+The following argument is optional:
+
+`-t` or `--tag` can be defined to use a specific version of a particular validator. Ex: `v0.6.0` with shellcheck or `v2.6.2` with shfmt. If this argument is not specified `latest` will be used.
 
 ## Example useage
 
