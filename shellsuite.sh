@@ -10,6 +10,7 @@ IFS=$'\n\t'
 #/  -p --path
 #/  -v --validator
 #/  -f --flags
+#/  -t --tag (optional)
 #/
 usage() {
     grep '^#/' "${SCRIPTNAME}" | cut -c4- || echo "Failed to display usage information."
@@ -72,6 +73,7 @@ cmdline() {
             #translate --gnu-long-options to -g (short options)
             --flags) LOCAL_ARGS="${LOCAL_ARGS:-}-f " ;;
             --path) LOCAL_ARGS="${LOCAL_ARGS:-}-p " ;;
+            --tag) LOCAL_ARGS="${LOCAL_ARGS:-}-t " ;;
             --validator) LOCAL_ARGS="${LOCAL_ARGS:-}-v " ;;
             --debug) LOCAL_ARGS="${LOCAL_ARGS:-}-x " ;;
             #pass through anything else
@@ -85,7 +87,7 @@ cmdline() {
     #Reset the positional parameters to the short options
     eval set -- "${LOCAL_ARGS:-}"
 
-    while getopts ":f:p:v:x" OPTION; do
+    while getopts ":f:p:v:t:x" OPTION; do
         case ${OPTION} in
             f)
                 if [[ ${OPTARG:0:1} != " " ]]; then
@@ -96,22 +98,26 @@ cmdline() {
             p)
                 readonly VALIDATIONPATH="${OPTARG[*]}"
                 ;;
+            t)
+                readonly VALIDATIONTAG="${OPTARG[*]}"
+                ;;
             v)
                 if [[ -z ${VALIDATIONPATH:-} ]]; then
                     fatal "Path must be defined first."
                 fi
-                case ${OPTARG} in
+                readonly VALIDATOR="${OPTARG}"
+                case ${VALIDATOR} in
                     bashate)
-                        readonly VALIDATOR="docker run --rm -v ${VALIDATIONPATH}:${VALIDATIONPATH} textclean/bashate"
-                        readonly VALIDATORCHECK="--show"
+                        readonly VALIDATIONCMD="docker run --rm -v ${VALIDATIONPATH}:${VALIDATIONPATH} textclean/bashate"
+                        readonly VALIDATIONCHECK="--show"
                         ;;
                     shellcheck)
-                        readonly VALIDATOR="docker run --rm -v ${VALIDATIONPATH}:${VALIDATIONPATH} koalaman/shellcheck"
-                        readonly VALIDATORCHECK="--version"
+                        readonly VALIDATIONCMD="docker run --rm -v ${VALIDATIONPATH}:${VALIDATIONPATH} koalaman/shellcheck"
+                        readonly VALIDATIONCHECK="--version"
                         ;;
                     shfmt)
-                        readonly VALIDATOR="docker run --rm -v ${VALIDATIONPATH}:${VALIDATIONPATH} mvdan/shfmt"
-                        readonly VALIDATORCHECK="--version"
+                        readonly VALIDATIONCMD="docker run --rm -v ${VALIDATIONPATH}:${VALIDATIONPATH} mvdan/shfmt"
+                        readonly VALIDATIONCHECK="--version"
                         ;;
                     *)
                         fatal "Invalid validator option."
@@ -123,11 +129,19 @@ cmdline() {
                 set -x
                 ;;
             :)
-                fatal "${OPTARG} requires an option."
+                case ${OPTARG} in
+                    t)
+                        readonly VALIDATIONTAG="latest"
+                        ;;
+                    *)
+                        fatal "${OPTARG} requires an option."
+                        ;;
+                esac
+                exit
                 ;;
             *)
                 usage
-                exit
+                exit 1
                 ;;
         esac
     done
@@ -149,24 +163,27 @@ main() {
     if [[ -z ${VALIDATIONPATH:-} ]]; then
         fatal "Path must be defined."
     fi
-    if [[ -z ${VALIDATOR:-} ]]; then
+    if [[ -z ${VALIDATIONCMD:-} ]]; then
         fatal "Validator must be defined."
+    fi
+    if [[ -z ${VALIDATIONTAG:-} ]]; then
+        readonly VALIDATIONTAG="latest"
     fi
     if [[ -z ${VALIDATIONFLAGS:-} ]]; then
         fatal "Flags must be defined."
     fi
-    if [[ -z ${VALIDATORCHECK:-} ]]; then
+    if [[ -z ${VALIDATIONCHECK:-} ]]; then
         fatal "Check must be defined."
     fi
 
-    # Check that the validator is installed
-    eval "${VALIDATOR} ${VALIDATORCHECK}" || fatal "Failed to check ${VALIDATOR} version."
+    # Check that the validator is usable
+    eval "${VALIDATIONCMD}:${VALIDATIONTAG} ${VALIDATIONCHECK}" || fatal "Failed to check ${VALIDATOR} version."
 
     # https://github.com/caarlos0/shell-ci-build
-    info "Linting all executables and .*sh files with ${VALIDATOR}..."
+    info "Linting all executables and .*sh files with ${VALIDATIONCMD}:${VALIDATIONTAG} ${VALIDATIONFLAGS[*]} ..."
     while IFS= read -r line; do
         if head -n1 "${VALIDATIONPATH}/${line}" | grep -q -E -w "sh|bash|dash|ksh"; then
-            eval "${VALIDATOR} ${VALIDATIONFLAGS[*]} ${VALIDATIONPATH}/${line}" || fatal "Linting ${line}"
+            eval "${VALIDATIONCMD}:${VALIDATIONTAG} ${VALIDATIONFLAGS[*]} ${VALIDATIONPATH}/${line}" || fatal "Linting ${line}"
             info "Linting ${line}"
         else
             warning "Skipping ${line}..."
