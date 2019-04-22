@@ -23,10 +23,9 @@ readonly ARGS=("$@")
 # Script Information
 # https://stackoverflow.com/questions/59895/get-the-source-directory-of-a-bash-script-from-within-the-script-itself/246128#246128
 get_scriptname() {
-    local SOURCE
-    local DIR
-    SOURCE="${BASH_SOURCE[0]:-$0}" # https://stackoverflow.com/questions/35006457/choosing-between-0-and-bash-source/35006505#35006505
+    local SOURCE="${BASH_SOURCE[0]:-$0}" # https://stackoverflow.com/questions/35006457/choosing-between-0-and-bash-source/35006505#35006505
     while [[ -L ${SOURCE} ]]; do # resolve ${SOURCE} until the file is no longer a symlink
+        local DIR
         DIR="$(cd -P "$(dirname "${SOURCE}")" > /dev/null 2>&1 && pwd)"
         SOURCE="$(readlink "${SOURCE}")"
         [[ ${SOURCE} != /* ]] && SOURCE="${DIR}/${SOURCE}" # if ${SOURCE} was a relative symlink, we need to resolve it relative to the path where the symlink file was located
@@ -43,13 +42,24 @@ readonly DETECTED_PGID=$(id -g "${DETECTED_PUID}" 2> /dev/null || true)
 readonly DETECTED_UGROUP=$(id -gn "${DETECTED_PUID}" 2> /dev/null || true)
 readonly DETECTED_HOMEDIR=$(eval echo "~${DETECTED_UNAME}" 2> /dev/null || true)
 
-# Colors
-# https://misc.flogisoft.com/bash/tip_colors_and_formatting
-readonly BLU='\e[34m'
-readonly GRN='\e[32m'
-readonly RED='\e[31m'
-readonly YLW='\e[33m'
-readonly NC='\e[0m'
+# Terminal Colors
+if [[ -t 1 ]] || [[ ${TRAVIS:-} == true ]]; then
+    # Reference for colornumbers used by most terminals can be found here: https://jonasjacek.github.io/colors/
+    # The actual color depends on the color scheme set by the current terminal-emulator
+    # For capabilities, see terminfo(5)
+    if [[ $(tput colors) -ge 8 ]]; then
+        BLU="$(tput setaf 4)"
+        GRN="$(tput setaf 2)"
+        RED="$(tput setaf 1)"
+        YLW="$(tput setaf 3)"
+        NC="$(tput sgr0)"
+    fi
+fi
+readonly BLU="${BLU:-}"
+readonly GRN="${GRN:-}"
+readonly RED="${RED:-}"
+readonly YLW="${YLW:-}"
+readonly NC="${NC:-}"
 
 # Log Functions
 readonly LOG_FILE="/tmp/shellsuite.log"
@@ -62,6 +72,7 @@ fatal() {
     exit 1
 }
 
+# Command Line Function
 cmdline() {
     # http://www.kfirlavi.com/blog/2012/11/14/defensive-bash-programming/
     # http://kirk.webfinish.com/2009/10/bash-shell-script-to-use-getopts-with-gnu-style-long-positional-parameters/
