@@ -43,7 +43,7 @@ readonly DETECTED_UGROUP=$(id -gn "${DETECTED_PUID}" 2> /dev/null || command tru
 readonly DETECTED_HOMEDIR=$(eval echo "~${DETECTED_UNAME}" 2> /dev/null || command true)
 
 # Terminal Colors
-if [[ -t 1 ]] || [[ ${TRAVIS:-} == "$(command true)" ]]; then
+if [[ -t 1 ]] || [[ ${TRAVIS:-} == true ]]; then
     # Reference for colornumbers used by most terminals can be found here: https://jonasjacek.github.io/colors/
     # The actual color depends on the color scheme set by the current terminal-emulator
     # For capabilities, see terminfo(5)
