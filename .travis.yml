@@ -21,6 +21,6 @@ env:
     - BRANCH=master           VALIDATOR=shfmt       FLAGS=${FLAGS_SHFMT}      TAG=${TAG_SHFMT}
     - BRANCH=master           VALIDATOR=shfmt       FLAGS=${FLAGS_SHFMT}      TAG=latest
 script:
-  - curl -fsSL https://raw.githubusercontent.com/nemchik/ShellSuite/${BRANCH}/shellsuite.sh -o shellsuite.sh && bash shellsuite.sh -p "${PWD}" -v "${VALIDATOR}" -f " ${FLAGS}" -t "${TAG}"
+  - curl -fsSL https://raw.githubusercontent.com/nemchik/ShellSuite/${BRANCH}/shellsuite.sh -o shellsuite-${TRAVIS_COMMIT}.sh && bash shellsuite-${TRAVIS_COMMIT}.sh -p "${PWD}" -v "${VALIDATOR}" -f " ${FLAGS}" -t "${TAG}"
 matrix:
   fast_finish: true

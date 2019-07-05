@@ -66,9 +66,9 @@ Running from this repo:
 
 ```yaml
 script:
-  - curl -fsSL https://raw.githubusercontent.com/nemchik/ShellSuite/master/shellsuite.sh -o shellsuite.sh && bash shellsuite.sh -p "${PWD}" -v "bashate" -f " -i E006"
-  - curl -fsSL https://raw.githubusercontent.com/nemchik/ShellSuite/master/shellsuite.sh -o shellsuite.sh && bash shellsuite.sh -p "${PWD}" -v "shellcheck" -f " -x"
-  - curl -fsSL https://raw.githubusercontent.com/nemchik/ShellSuite/master/shellsuite.sh -o shellsuite.sh && bash shellsuite.sh -p "${PWD}" -v "shfmt" -f " -s -i 4 -ci -sr -d"
+  - curl -fsSL https://raw.githubusercontent.com/nemchik/ShellSuite/master/shellsuite.sh -o shellsuite-${TRAVIS_COMMIT}.sh && bash shellsuite-${TRAVIS_COMMIT}.sh -p "${PWD}" -v "bashate" -f " -i E006"
+  - curl -fsSL https://raw.githubusercontent.com/nemchik/ShellSuite/master/shellsuite.sh -o shellsuite-${TRAVIS_COMMIT}.sh && bash shellsuite-${TRAVIS_COMMIT}.sh -p "${PWD}" -v "shellcheck" -f " -x"
+  - curl -fsSL https://raw.githubusercontent.com/nemchik/ShellSuite/master/shellsuite.sh -o shellsuite-${TRAVIS_COMMIT}.sh && bash shellsuite-${TRAVIS_COMMIT}.sh -p "${PWD}" -v "shfmt" -f " -s -i 4 -ci -sr -d"
 ```
 
 Running from your own repo:
