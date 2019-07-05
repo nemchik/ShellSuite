@@ -137,7 +137,7 @@ cmdline() {
                 esac
                 ;;
             x)
-                readonly DEBUG='-x'
+                # readonly DEBUG='-x'
                 set -x
                 ;;
             :)
