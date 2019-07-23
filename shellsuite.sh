@@ -109,7 +109,6 @@ cmdline() {
     return
 }
 cmdline "${ARGS[@]:-}"
-readonly VERBOSE=1
 if [[ -n ${DEBUG:-} ]] && [[ -n ${VERBOSE:-} ]]; then
     readonly TRACE=1
 fi
@@ -228,15 +227,15 @@ main() {
     eval "${VALIDATIONCMD}:${VALIDATIONTAG} ${VALIDATIONCHECK}" || fatal "Failed to check ${VALIDATOR} version."
 
     # https://github.com/caarlos0/shell-ci-build
-    info "Linting all executables and .*sh files with ${VALIDATIONCMD}:${VALIDATIONTAG} ${VALIDATIONFLAGS[*]} ..."
+    notice "Linting all executables and .*sh files with ${VALIDATIONCMD}:${VALIDATIONTAG} ${VALIDATIONFLAGS[*]} ..."
     while IFS= read -r line; do
         if head -n1 "${VALIDATIONPATH}/${line}" | grep -q -E -w "sh|bash|dash|ksh"; then
             eval "${VALIDATIONCMD}:${VALIDATIONTAG} ${VALIDATIONFLAGS[*]} ${VALIDATIONPATH}/${line}" || fatal "Linting ${line}"
-            info "Linting ${line}"
+            notice "Linting ${line}"
         else
-            notice "Skipping ${line}..."
+            warn "Skipping ${line}..."
         fi
     done < <(git -C "${VALIDATIONPATH}" ls-tree -r HEAD | grep -E '^1007|.*\..*sh$' | awk '{print $4}')
-    info "${VALIDATOR} validation complete."
+    notice "${VALIDATOR} validation complete."
 }
 main
