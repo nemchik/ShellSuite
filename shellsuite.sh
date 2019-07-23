@@ -19,61 +19,6 @@ usage() {
 
 # Command Line Arguments
 readonly ARGS=("$@")
-
-# Script Information
-# https://stackoverflow.com/questions/59895/get-the-source-directory-of-a-bash-script-from-within-the-script-itself/246128#246128
-get_scriptname() {
-    # https://stackoverflow.com/questions/35006457/choosing-between-0-and-bash-source/35006505#35006505
-    local SOURCE=${BASH_SOURCE[0]:-$0}
-    while [[ -L ${SOURCE} ]]; do # resolve ${SOURCE} until the file is no longer a symlink
-        local DIR
-        DIR=$(cd -P "$(dirname "${SOURCE}")" > /dev/null 2>&1 && pwd)
-        SOURCE=$(readlink "${SOURCE}")
-        [[ ${SOURCE} != /* ]] && SOURCE="${DIR}/${SOURCE}" # if ${SOURCE} was a relative symlink, we need to resolve it relative to the path where the symlink file was located
-    done
-    echo "${SOURCE}"
-}
-readonly SCRIPTPATH=$(cd -P "$(dirname "$(get_scriptname)")" > /dev/null 2>&1 && pwd)
-readonly SCRIPTNAME="${SCRIPTPATH}/$(basename "$(get_scriptname)")"
-
-# User/Group Information
-readonly DETECTED_PUID=${SUDO_UID:-$UID}
-readonly DETECTED_UNAME=$(id -un "${DETECTED_PUID}" 2> /dev/null || true)
-readonly DETECTED_PGID=$(id -g "${DETECTED_PUID}" 2> /dev/null || true)
-readonly DETECTED_UGROUP=$(id -gn "${DETECTED_PUID}" 2> /dev/null || true)
-# readonly DETECTED_HOMEDIR=$(eval echo "~${DETECTED_UNAME}" 2> /dev/null || true)
-
-# Terminal Colors
-if [[ ${CI:-} == true ]] || [[ -t 1 ]]; then
-    # Reference for colornumbers used by most terminals can be found here: https://jonasjacek.github.io/colors/
-    # The actual color depends on the color scheme set by the current terminal-emulator
-    # For capabilities, see terminfo(5)
-    if [[ $(tput colors) -ge 8 ]]; then
-        BLU=$(tput setaf 4)
-        GRN=$(tput setaf 2)
-        RED=$(tput setaf 1)
-        YLW=$(tput setaf 3)
-        NC=$(tput sgr0)
-    fi
-fi
-readonly BLU=${BLU:-}
-readonly GRN=${GRN:-}
-readonly RED=${RED:-}
-readonly YLW=${YLW:-}
-readonly NC=${NC:-}
-
-# Log Functions
-readonly LOG_FILE="/tmp/shellsuite.log"
-sudo chown "${DETECTED_PUID:-$DETECTED_UNAME}":"${DETECTED_PGID:-$DETECTED_UGROUP}" "${LOG_FILE}" > /dev/null 2>&1 || true
-info() { echo -e "${NC}$(date +"%F %T") ${BLU}[INFO]${NC}       $*${NC}" | tee -a "${LOG_FILE}" >&2; }
-warning() { echo -e "${NC}$(date +"%F %T") ${YLW}[WARNING]${NC}    $*${NC}" | tee -a "${LOG_FILE}" >&2; }
-error() { echo -e "${NC}$(date +"%F %T") ${RED}[ERROR]${NC}      $*${NC}" | tee -a "${LOG_FILE}" >&2; }
-fatal() {
-    echo -e "${NC}$(date +"%F %T") ${RED}[FATAL]${NC}      $*${NC}" | tee -a "${LOG_FILE}" >&2
-    exit 1
-}
-
-# Command Line Function
 cmdline() {
     # http://www.kfirlavi.com/blog/2012/11/14/defensive-bash-programming/
     # http://kirk.webfinish.com/2009/10/bash-shell-script-to-use-getopts-with-gnu-style-long-positional-parameters/
@@ -103,7 +48,8 @@ cmdline() {
         case ${OPTION} in
             f)
                 if [[ ${OPTARG:0:1} != " " ]]; then
-                    fatal "Flags must start with a space."
+                    echo "Flags must start with a space."
+                    exit 1
                 fi
                 readonly VALIDATIONFLAGS=${OPTARG[*]}
                 ;;
@@ -115,7 +61,8 @@ cmdline() {
                 ;;
             v)
                 if [[ -z ${VALIDATIONPATH:-} ]]; then
-                    fatal "Path must be defined first."
+                    echo "Path must be defined first."
+                    exit 1
                 fi
                 readonly VALIDATOR=${OPTARG}
                 case ${VALIDATOR} in
@@ -132,12 +79,13 @@ cmdline() {
                         readonly VALIDATIONCHECK="--version"
                         ;;
                     *)
-                        fatal "Invalid validator option."
+                        echo "Invalid validator option."
+                        exit 1
                         ;;
                 esac
                 ;;
             x)
-                # readonly DEBUG='-x'
+                readonly DEBUG=1
                 set -x
                 ;;
             :)
@@ -146,7 +94,8 @@ cmdline() {
                         readonly VALIDATIONTAG="latest"
                         ;;
                     *)
-                        fatal "${OPTARG} requires an option."
+                        echo "${OPTARG} requires an option."
+                        exit 1
                         ;;
                 esac
                 exit
@@ -157,7 +106,96 @@ cmdline() {
                 ;;
         esac
     done
-    return 0
+    return
+}
+cmdline "${ARGS[@]:-}"
+if [[ -n ${DEBUG:-} ]] && [[ -n ${VERBOSE:-} ]]; then
+    readonly TRACE=1
+fi
+
+# Github Token for Travis CI
+if [[ ${CI:-} == true ]] && [[ ${TRAVIS_SECURE_ENV_VARS:-} == true ]]; then
+    readonly GH_HEADER="Authorization: token ${GH_TOKEN}"
+    echo "${GH_HEADER}" > /dev/null 2>&1 || true # Ridiculous workaround for SC2034 where the variable is used in other files called by this script
+fi
+
+# Script Information
+# https://stackoverflow.com/questions/59895/get-the-source-directory-of-a-bash-script-from-within-the-script-itself/246128#246128
+get_scriptname() {
+    # https://stackoverflow.com/questions/35006457/choosing-between-0-and-bash-source/35006505#35006505
+    local SOURCE=${BASH_SOURCE[0]:-$0}
+    while [[ -L ${SOURCE} ]]; do # resolve ${SOURCE} until the file is no longer a symlink
+        local DIR
+        DIR=$(cd -P "$(dirname "${SOURCE}")" > /dev/null 2>&1 && pwd)
+        SOURCE=$(readlink "${SOURCE}")
+        [[ ${SOURCE} != /* ]] && SOURCE="${DIR}/${SOURCE}" # if ${SOURCE} was a relative symlink, we need to resolve it relative to the path where the symlink file was located
+    done
+    echo "${SOURCE}"
+}
+readonly SCRIPTPATH=$(cd -P "$(dirname "$(get_scriptname)")" > /dev/null 2>&1 && pwd)
+readonly SCRIPTNAME="${SCRIPTPATH}/$(basename "$(get_scriptname)")"
+
+# User/Group Information
+readonly DETECTED_PUID=${SUDO_UID:-$UID}
+readonly DETECTED_UNAME=$(id -un "${DETECTED_PUID}" 2> /dev/null || true)
+readonly DETECTED_PGID=$(id -g "${DETECTED_PUID}" 2> /dev/null || true)
+readonly DETECTED_UGROUP=$(id -gn "${DETECTED_PUID}" 2> /dev/null || true)
+# readonly DETECTED_HOMEDIR=$(eval echo "~${DETECTED_UNAME}" 2> /dev/null || true)
+
+# Terminal Colors
+if [[ ${CI:-} == true ]] || [[ -t 1 ]]; then
+    # http://linuxcommand.org/lc3_adv_tput.php
+    if [[ $(tput colors) -ge 8 ]]; then
+        # B = Blue
+        # C = Cyan
+        # G = Green
+        # K = Black
+        # M = Magenta
+        # R = Red
+        # W = White
+        # Y = Yellow
+        declare -Agr B=(
+            [B]=$(tput setab 4)
+            [C]=$(tput setab 6)
+            [G]=$(tput setab 2)
+            [K]=$(tput setab 0)
+            [M]=$(tput setab 5)
+            [R]=$(tput setab 1)
+            [W]=$(tput setab 7)
+            [Y]=$(tput setab 3)
+        )
+        declare -Agr F=(
+            [B]=$(tput setaf 4)
+            [C]=$(tput setaf 6)
+            [G]=$(tput setaf 2)
+            [K]=$(tput setaf 0)
+            [M]=$(tput setaf 5)
+            [R]=$(tput setaf 1)
+            [W]=$(tput setaf 7)
+            [Y]=$(tput setaf 3)
+        )
+        readonly NC=$(tput sgr0)
+    fi
+fi
+
+# Log Functions
+readonly LOG_FILE="/tmp/dockstarter.log"
+sudo chown "${DETECTED_PUID:-$DETECTED_UNAME}":"${DETECTED_PGID:-$DETECTED_UGROUP}" "${LOG_FILE}" > /dev/null 2>&1 || true
+trace() { if [[ -n ${TRACE:-} ]]; then
+    echo -e "${NC:-}$(date +"%F %T") ${F[B]:-}[TRACE ]${NC:-}   $*${NC:-}" | tee -a "${LOG_FILE}" >&2
+fi; }
+debug() { if [[ -n ${DEBUG:-} ]]; then
+    echo -e "${NC:-}$(date +"%F %T") ${F[B]:-}[DEBUG ]${NC:-}   $*${NC:-}" | tee -a "${LOG_FILE}" >&2
+fi; }
+info() { if [[ -n ${VERBOSE:-} ]]; then
+    echo -e "${NC:-}$(date +"%F %T") ${F[B]:-}[INFO  ]${NC:-}   $*${NC:-}" | tee -a "${LOG_FILE}" >&2
+fi; }
+notice() { echo -e "${NC:-}$(date +"%F %T") ${F[G]:-}[NOTICE]${NC:-}   $*${NC:-}" | tee -a "${LOG_FILE}" >&2; }
+warn() { echo -e "${NC:-}$(date +"%F %T") ${F[Y]:-}[WARN  ]${NC:-}   $*${NC:-}" | tee -a "${LOG_FILE}" >&2; }
+error() { echo -e "${NC:-}$(date +"%F %T") ${F[R]:-}[ERROR ]${NC:-}   $*${NC:-}" | tee -a "${LOG_FILE}" >&2; }
+fatal() {
+    echo -e "${NC:-}$(date +"%F %T") ${B[R]:-}${F[W]:-}[FATAL ]${NC:-}   $*${NC:-}" | tee -a "${LOG_FILE}" >&2
+    exit 1
 }
 
 # Main Function
@@ -167,9 +205,6 @@ main() {
     if [[ ${ARCH} != "x86_64" ]]; then
         fatal "Unsupported architecture."
     fi
-
-    # Set command line variables
-    cmdline "${ARGS[@]:-}"
 
     # Confirm variables are set
     if [[ -z ${VALIDATIONPATH:-} ]]; then
@@ -192,15 +227,15 @@ main() {
     eval "${VALIDATIONCMD}:${VALIDATIONTAG} ${VALIDATIONCHECK}" || fatal "Failed to check ${VALIDATOR} version."
 
     # https://github.com/caarlos0/shell-ci-build
-    info "Linting all executables and .*sh files with ${VALIDATIONCMD}:${VALIDATIONTAG} ${VALIDATIONFLAGS[*]} ..."
+    notice "Linting all executables and .*sh files with ${VALIDATIONCMD}:${VALIDATIONTAG} ${VALIDATIONFLAGS[*]} ..."
     while IFS= read -r line; do
         if head -n1 "${VALIDATIONPATH}/${line}" | grep -q -E -w "sh|bash|dash|ksh"; then
             eval "${VALIDATIONCMD}:${VALIDATIONTAG} ${VALIDATIONFLAGS[*]} ${VALIDATIONPATH}/${line}" || fatal "Linting ${line}"
-            info "Linting ${line}"
+            notice "Linting ${line}"
         else
-            warning "Skipping ${line}..."
+            warn "Skipping ${line}..."
         fi
     done < <(git -C "${VALIDATIONPATH}" ls-tree -r HEAD | grep -E '^1007|.*\..*sh$' | awk '{print $4}')
-    info "${VALIDATOR} validation complete."
+    notice "${VALIDATOR} validation complete."
 }
 main
