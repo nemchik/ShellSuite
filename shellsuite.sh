@@ -144,39 +144,64 @@ readonly DETECTED_UGROUP=$(id -gn "${DETECTED_PUID}" 2> /dev/null || true)
 
 # Terminal Colors
 if [[ ${CI:-} == true ]] || [[ -t 1 ]]; then
-    # http://linuxcommand.org/lc3_adv_tput.php
-    if [[ $(tput colors) -ge 8 ]]; then
-        # B = Blue
-        # C = Cyan
-        # G = Green
-        # K = Black
-        # M = Magenta
-        # R = Red
-        # W = White
-        # Y = Yellow
-        declare -Agr B=(
-            [B]=$(tput setab 4)
-            [C]=$(tput setab 6)
-            [G]=$(tput setab 2)
-            [K]=$(tput setab 0)
-            [M]=$(tput setab 5)
-            [R]=$(tput setab 1)
-            [W]=$(tput setab 7)
-            [Y]=$(tput setab 3)
-        )
-        declare -Agr F=(
-            [B]=$(tput setaf 4)
-            [C]=$(tput setaf 6)
-            [G]=$(tput setaf 2)
-            [K]=$(tput setaf 0)
-            [M]=$(tput setaf 5)
-            [R]=$(tput setaf 1)
-            [W]=$(tput setaf 7)
-            [Y]=$(tput setaf 3)
-        )
-        readonly NC=$(tput sgr0)
-    fi
+    readonly SCRIPTTERM=true
 fi
+tcolor() {
+    if [[ -n ${SCRIPTTERM:-} ]]; then
+        # http://linuxcommand.org/lc3_adv_tput.php
+        local BF=${1:-}
+        local CAP
+        case ${BF} in
+            [Bb]) CAP=setab ;;
+            [Ff]) CAP=setaf ;;
+            [Nn][Cc]) CAP=sgr0 ;;
+            *) return ;;
+        esac
+        local COLOR_IN=${2:-}
+        local VAL
+        if [[ ${CAP} != "sgr0" ]]; then
+            case ${COLOR_IN} in
+                [Bb4]) VAL=4 ;; # Blue
+                [Cc6]) VAL=6 ;; # Cyan
+                [Gg2]) VAL=2 ;; # Green
+                [Kk0]) VAL=0 ;; # Black
+                [Mm5]) VAL=5 ;; # Magenta
+                [Rr1]) VAL=1 ;; # Red
+                [Ww7]) VAL=7 ;; # White
+                [Yy3]) VAL=3 ;; # Yellow
+                *) return ;;
+            esac
+        fi
+        local COLOR_OUT
+        if [[ $(tput colors) -ge 8 ]]; then
+            COLOR_OUT=$(eval tput ${CAP:-} ${VAL:-})
+        fi
+        echo "${COLOR_OUT:-}"
+    else
+        return
+    fi
+}
+declare -Agr B=(
+    [B]="$(tcolor B B)"
+    [C]="$(tcolor B C)"
+    [G]="$(tcolor B G)"
+    [K]="$(tcolor B K)"
+    [M]="$(tcolor B M)"
+    [R]="$(tcolor B R)"
+    [W]="$(tcolor B W)"
+    [Y]="$(tcolor B Y)"
+)
+declare -Agr F=(
+    [B]="$(tcolor F B)"
+    [C]="$(tcolor F C)"
+    [G]="$(tcolor F G)"
+    [K]="$(tcolor F K)"
+    [M]="$(tcolor F M)"
+    [R]="$(tcolor F R)"
+    [W]="$(tcolor F W)"
+    [Y]="$(tcolor F Y)"
+)
+readonly NC="$(tcolor NC)"
 
 # Log Functions
 readonly LOG_FILE="/tmp/dockstarter.log"
