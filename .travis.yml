@@ -1,6 +1,8 @@
 language: minimal
 env:
   global:
+    - CI=true
+    - COMMIT_SHA=${TRAVIS_COMMIT}
     - FLAGS_BASHATE="-i E006"
     - FLAGS_SHELLCHECK="-x"
     - FLAGS_SHFMT="-s -i 4 -ci -sr -d"
@@ -20,7 +22,7 @@ env:
     - BRANCH=master           VALIDATOR=shellcheck  FLAGS=${FLAGS_SHELLCHECK} TAG=latest
     - BRANCH=master           VALIDATOR=shfmt       FLAGS=${FLAGS_SHFMT}      TAG=${TAG_SHFMT}
     - BRANCH=master           VALIDATOR=shfmt       FLAGS=${FLAGS_SHFMT}      TAG=latest
-script:
-  - curl -fsSL https://raw.githubusercontent.com/nemchik/ShellSuite/${BRANCH}/shellsuite.sh -o shellsuite-${TRAVIS_COMMIT}.sh && bash shellsuite-${TRAVIS_COMMIT}.sh -p "${PWD}" -v "${VALIDATOR}" -f " ${FLAGS}" -t "${TAG}"
+script: |
+    curl -fsSL https://raw.githubusercontent.com/nemchik/ShellSuite/${BRANCH}/shellsuite.sh -o shellsuite-${TRAVIS_COMMIT}.sh && bash shellsuite-${TRAVIS_COMMIT}.sh -p "${PWD}" -v "${VALIDATOR}" -f " ${FLAGS}" -t "${TAG}"
 matrix:
   fast_finish: true
